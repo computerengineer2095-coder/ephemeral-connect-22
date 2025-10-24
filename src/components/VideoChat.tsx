@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PhoneOff, Send, MessageSquare, X } from "lucide-react";
+import { PhoneOff, Send } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
@@ -18,10 +18,18 @@ interface VideoChatProps {
 const VideoChat = ({ onDisconnect }: VideoChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Simulate connection after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsConnected(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Get user's camera and microphone
@@ -80,76 +88,126 @@ const VideoChat = ({ onDisconnect }: VideoChatProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Video Area */}
-      <div className="h-screen flex flex-col md:flex-row gap-2 p-2">
-        {/* Remote Video - Main */}
-        <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute top-4 left-4 glass px-3 py-1.5 rounded-full">
-            <span className="text-xs font-medium">🌍 Stranger</span>
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Video Area - Split Screen */}
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col lg:flex-row">
+          {/* Local Video - Left Half */}
+          <div className="flex-1 relative bg-muted">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-4 left-4 glass px-3 py-1.5 rounded-full">
+              <span className="text-xs font-medium">You</span>
+            </div>
+          </div>
+
+          {/* Remote Video - Right Half */}
+          <div className="flex-1 relative bg-muted">
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            {!isConnected && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                <div className="text-center">
+                  <div className="animate-pulse text-muted-foreground text-lg font-medium">
+                    Connecting...
+                  </div>
+                </div>
+              </div>
+            )}
+            {isConnected && (
+              <div className="absolute top-4 left-4 glass px-3 py-1.5 rounded-full">
+                <span className="text-xs font-medium">🌍 Stranger</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Local Video - Small */}
-        <div className="w-full md:w-48 h-32 md:h-auto relative bg-muted rounded-lg overflow-hidden">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute bottom-2 right-2 glass px-2 py-1 rounded-full">
-            <span className="text-xs">You</span>
-          </div>
+        {/* Controls - Bottom Center on Mobile */}
+        <div className="lg:absolute lg:bottom-8 lg:left-1/2 lg:-translate-x-1/2 flex justify-center gap-3 p-4 lg:p-0 z-20">
+          <Button
+            variant="destructive"
+            size="icon"
+            className="rounded-full w-14 h-14"
+            onClick={onDisconnect}
+          >
+            <PhoneOff className="w-6 h-6" />
+          </Button>
         </div>
+
+        {/* Chat Overlay - Mobile (YouTube-style) */}
+        {isConnected && (
+          <div className="lg:hidden">
+            <div className="liquid-glass border-t border-border/30">
+              {/* Messages - Compact for Mobile */}
+              <ScrollArea className="h-48 p-3">
+                <div className="space-y-2">
+                  {messages.length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-4">
+                      No messages yet
+                    </p>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          message.sender === "me" ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-lg px-3 py-1.5 ${
+                            message.sender === "me"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-secondary-foreground"
+                          }`}
+                        >
+                          <p className="text-xs">{message.text}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Input */}
+              <form onSubmit={handleSendMessage} className="p-3 border-t border-border/30">
+                <div className="flex gap-2">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 h-9 text-sm"
+                  />
+                  <Button type="submit" size="icon" className="h-9 w-9">
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Controls */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-        <Button
-          variant="destructive"
-          size="icon"
-          className="rounded-full w-14 h-14"
-          onClick={onDisconnect}
-        >
-          <PhoneOff className="w-6 h-6" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          className="rounded-full w-14 h-14"
-          onClick={() => setIsChatOpen(!isChatOpen)}
-        >
-          <MessageSquare className="w-6 h-6" />
-        </Button>
-      </div>
-
-      {/* Chat Overlay */}
-      {isChatOpen && (
-        <div className="absolute bottom-0 left-0 right-0 md:bottom-4 md:left-4 md:right-auto md:w-96 z-30">
-          <div className="liquid-glass rounded-t-2xl md:rounded-2xl overflow-hidden">
+      {/* Chat Sidebar - Desktop (Right Side) */}
+      {isConnected && (
+        <div className="hidden lg:block w-96 border-l border-border">
+          <div className="h-full flex flex-col bg-card">
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border/30">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <h3 className="font-semibold text-sm">Chat</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setIsChatOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="h-80 p-4">
+            <ScrollArea className="flex-1 p-4">
               <div className="space-y-3">
                 {messages.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-8">
@@ -180,7 +238,7 @@ const VideoChat = ({ onDisconnect }: VideoChatProps) => {
             </ScrollArea>
 
             {/* Input */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-border/30">
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-border">
               <div className="flex gap-2">
                 <Input
                   value={inputMessage}
