@@ -14,13 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      waiting_users: {
+        Row: {
+          country: string | null
+          id: string
+          is_matched: boolean
+          joined_at: string
+          socket_id: string
+        }
+        Insert: {
+          country?: string | null
+          id?: string
+          is_matched?: boolean
+          joined_at?: string
+          socket_id: string
+        }
+        Update: {
+          country?: string | null
+          id?: string
+          is_matched?: boolean
+          joined_at?: string
+          socket_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_waiting_users: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
