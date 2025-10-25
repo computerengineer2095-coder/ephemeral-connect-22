@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import VideoChat from "@/components/VideoChat";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 const Index = () => {
@@ -171,8 +171,15 @@ const Index = () => {
     setMatchedUserId(null);
   };
 
-  if (isMatched) {
-    return <VideoChat onDisconnect={handleDisconnect} />;
+  if (isSearching || isMatched) {
+    return (
+      <VideoChat 
+        onDisconnect={handleDisconnect}
+        isConnected={isMatched}
+        myUserId={myUserId}
+        matchedUserId={matchedUserId}
+      />
+    );
   }
 
   return (
